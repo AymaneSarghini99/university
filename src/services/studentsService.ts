@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { hydrateStudentProfile, hydrateStudentProfiles } from "@/lib/storage";
 import { isLocalDevBypass } from "@/lib/dev-mode";
 import {
   mockDashboardStats,
@@ -56,7 +57,7 @@ export async function fetchVisibleStudents(filters: StudentFilters): Promise<Stu
     });
   }
 
-  return rows;
+  return hydrateStudentProfiles(rows);
 }
 
 export async function fetchStudentById(id: string): Promise<StudentProfile | null> {
@@ -70,7 +71,9 @@ export async function fetchStudentById(id: string): Promise<StudentProfile | nul
     .maybeSingle();
 
   if (error) throw error;
-  return (data as StudentProfile | null) ?? null;
+  const row = (data as StudentProfile | null) ?? null;
+  if (!row) return null;
+  return hydrateStudentProfile(row);
 }
 
 export async function fetchInterestedStudentIds(universityId: string): Promise<Set<string>> {
@@ -97,7 +100,14 @@ export async function fetchInterestedStudents(universityId: string) {
     .order("updated_at", { ascending: false });
 
   if (error) throw error;
-  return data ?? [];
+  const rows = data ?? [];
+  return Promise.all(
+    rows.map(async (row) => {
+      const student = row.student as StudentProfile | null;
+      if (!student) return row;
+      return { ...row, student: await hydrateStudentProfile(student) };
+    }),
+  );
 }
 
 export async function expressInterest(params: {

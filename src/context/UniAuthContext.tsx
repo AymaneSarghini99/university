@@ -33,6 +33,12 @@ export const UniAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
       .eq("id", userId)
       .eq("is_active", true)
       .maybeSingle();
+
+    if (data?.university && data.university.is_active === false) {
+      setAccount(null);
+      return;
+    }
+
     setAccount(data ?? null);
   };
 
@@ -78,14 +84,20 @@ export const UniAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const { data: uniAccount } = await supabase
       .from("university_accounts")
-      .select("id")
+      .select("id, university:partner_universities(is_active)")
       .eq("id", data.user.id)
       .eq("is_active", true)
       .maybeSingle();
 
-    if (!uniAccount) {
+    const partner = uniAccount?.university as { is_active?: boolean } | null;
+    if (!uniAccount || partner?.is_active === false) {
       await supabase.auth.signOut();
-      return { success: false, error: "No university account found for this email." };
+      return {
+        success: false,
+        error: partner?.is_active === false
+          ? "This university partnership is no longer active."
+          : "No university account found for this email.",
+      };
     }
 
     return { success: true };
