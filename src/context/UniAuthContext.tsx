@@ -11,7 +11,6 @@ interface UniAuthContextType {
   account: UniversityAccount | null;
   loading: boolean;
   isDevPreview: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -21,8 +20,8 @@ const MOCK_USER = { id: MOCK_USER_ID, email: MOCK_ACCOUNT.email } as User;
 
 export const UniAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const devPreview = isLocalDevBypass();
-  const { user: authUser } = useAuthContext();
-  const [user, setUser] = useState<User | null>(devPreview ? MOCK_USER : (authUser ?? null));
+  const { user: authUser, mode, signOut: authSignOut } = useAuthContext();
+  const [user, setUser] = useState<User | null>(devPreview ? MOCK_USER : null);
   const [account, setAccount] = useState<UniversityAccount | null>(devPreview ? MOCK_ACCOUNT : null);
   const [loading, setLoading] = useState(!devPreview);
 
@@ -33,7 +32,7 @@ export const UniAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
       .eq("id", userId)
       .eq("is_active", true)
       .maybeSingle();
-    setAccount(data ?? null);
+    setAccount((data as UniversityAccount | null) ?? null);
   };
 
   useEffect(() => {
@@ -50,7 +49,8 @@ export const UniAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setLoading(true);
       setUser(authUser ?? null);
 
-      if (authUser) {
+      // Only load partner account when in partner mode (admins never get partner data via this path)
+      if (authUser && mode === "partner") {
         try {
           await loadAccount(authUser.id);
         } catch {
@@ -66,41 +66,18 @@ export const UniAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => {
       cancelled = true;
     };
-  }, [authUser, devPreview]);
-
-  const signIn = async (email: string, password: string) => {
-    if (devPreview) return { success: true };
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data?.user) {
-      return { success: false, error: error?.message ?? "Sign in failed" };
-    }
-
-    const { data: uniAccount } = await supabase
-      .from("university_accounts")
-      .select("id")
-      .eq("id", data.user.id)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (!uniAccount) {
-      await supabase.auth.signOut();
-      return { success: false, error: "No university account found for this email." };
-    }
-
-    return { success: true };
-  };
+  }, [authUser, mode, devPreview]);
 
   const signOut = async () => {
     if (devPreview) return;
-    await supabase.auth.signOut();
+    await authSignOut();
     setUser(null);
     setAccount(null);
   };
 
   return (
     <UniAuthContext.Provider
-      value={{ user, account, loading, isDevPreview: devPreview, signIn, signOut }}
+      value={{ user, account, loading, isDevPreview: devPreview, signOut }}
     >
       {children}
     </UniAuthContext.Provider>

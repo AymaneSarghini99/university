@@ -40,7 +40,7 @@ export const MOCK_STUDENTS: StudentProfile[] = [
     english_level: "IELTS 6.5",
     chinese_level: "HSK 3",
     scholarship_interest: true,
-    intake_semester: "Fall 2026",
+    intake_semester: "Fall 2027",
     study_plan_summary: "Interested in software engineering and AI applications.",
     profile_score: 88,
     documents: {
@@ -63,7 +63,7 @@ export const MOCK_STUDENTS: StudentProfile[] = [
     english_level: "IELTS 7.0",
     chinese_level: "HSK 4",
     scholarship_interest: false,
-    intake_semester: "Spring 2026",
+    intake_semester: "Spring 2027",
     profile_score: 92,
     documents: {
       passport: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
@@ -84,7 +84,7 @@ export const MOCK_STUDENTS: StudentProfile[] = [
     english_level: "IELTS 6.0",
     chinese_level: "Beginner",
     scholarship_interest: true,
-    intake_semester: "Fall 2026",
+    intake_semester: "Fall 2027",
     profile_score: 76,
     documents: {
       passport: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
@@ -104,7 +104,7 @@ export const MOCK_STUDENTS: StudentProfile[] = [
     english_level: "IELTS 5.5",
     chinese_level: "HSK 2",
     scholarship_interest: true,
-    intake_semester: "Spring 2026",
+    intake_semester: "Spring 2027",
     profile_score: 81,
     documents: {},
     created_at: now,
@@ -122,7 +122,7 @@ export const MOCK_STUDENTS: StudentProfile[] = [
     english_level: "IELTS 7.5",
     chinese_level: "HSK 5",
     scholarship_interest: false,
-    intake_semester: "Fall 2026",
+    intake_semester: "Fall 2027",
     profile_score: 95,
     documents: {
       passport: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",

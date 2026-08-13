@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { GraduationCap } from "lucide-react";
-import { useUniAuth } from "@/context/UniAuthContext";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,109 +16,183 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import { useAuthContext } from "@/context/AuthContext";
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Enter a valid email address." }),
+  email: z.string().min(1, { message: "Email is required." }),
   password: z.string().min(4, { message: "Password must be at least 4 characters." }),
 });
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const { signIn, user, account, loading } = useUniAuth();
+  const {
+    signIn,
+    signOut,
+    user,
+    loading,
+    roleLoading,
+    isAdmin,
+    mode,
+    authError,
+    retryRoleCheck,
+  } = useAuthContext();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
   useEffect(() => {
-    if (!loading && user && account) {
+    if (!loading && !roleLoading && user && isAdmin) {
+      navigate("/ops", { replace: true });
+    } else if (!loading && !roleLoading && user && mode === "partner") {
       navigate("/uni/dashboard", { replace: true });
     }
-  }, [user, account, loading, navigate]);
+  }, [user, loading, roleLoading, isAdmin, mode, navigate]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsLoading(true);
-    const result = await signIn(values.email, values.password);
+  useEffect(() => {
+    if (!isLoading || loading || roleLoading || !user) return;
 
-    if (result.success) {
-      toast({ title: "Welcome back", description: "Redirecting to your dashboard." });
-      return;
+    if (!isAdmin && mode !== "partner") {
+      setIsLoading(false);
+      void signOut();
+      toast({
+        title: "Not an admin account",
+        description:
+          authError ??
+          "This login exists but has no admin or partner access. Contact your Sallam administrator.",
+        variant: "destructive",
+      });
     }
+  }, [isLoading, loading, roleLoading, user, isAdmin, mode, signOut, authError]);
 
-    toast({
-      title: "Sign in failed",
-      description: result.error ?? "Please check your credentials.",
-      variant: "destructive",
-    });
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    try {
+      const result = await signIn(values.email, values.password);
+
+      if (result.success) {
+        toast({
+          title: "Login successful",
+          description: result.mode === "partner" ? "Opening partner portal…" : "Welcome to University Ops",
+        });
+        if (result.mode === "partner") navigate("/uni/dashboard", { replace: true });
+        else if (result.mode === "admin") navigate("/ops", { replace: true });
+        return;
+      }
+
+      toast({
+        title: "Login failed",
+        description: result.error ?? "Invalid email or password",
+        variant: "destructive",
+      });
+    } catch {
+      toast({
+        title: "Login error",
+        description: "An error occurred during login",
+        variant: "destructive",
+      });
+    }
     setIsLoading(false);
-  };
+  }
+
+  const needsRoleRetry = Boolean(user && !isAdmin && mode === null && authError);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e8f3f2_0,_#fafafa_45%,_#ffffff_100%)] px-4 py-12">
-      <div className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-md flex-col justify-center">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-white shadow-lg shadow-brand/20">
-            <GraduationCap className="h-7 w-7" />
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-            Sallam Partner Portal
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Discover qualified students for your university.
-          </p>
-        </div>
-
-        <Card className="border-border/60 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Sign in</CardTitle>
+    <div className="flex min-h-screen flex-col">
+      <main className="flex flex-1 items-center justify-center py-16">
+        <Card className="mx-auto w-full max-w-md animate-fade-in">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
           </CardHeader>
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="recruiter@university.edu" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            {needsRoleRetry ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">{authError}</p>
                 <Button
-                  type="submit"
-                  className="w-full bg-brand hover:bg-brand-dark"
-                  disabled={isLoading}
+                  type="button"
+                  className="w-full bg-brand text-white hover:bg-brand-dark"
+                  disabled={isLoading || roleLoading}
+                  onClick={() => void retryRoleCheck()}
                 >
-                  {isLoading ? "Signing in..." : "Sign In"}
+                  {isLoading || roleLoading ? "Retrying…" : "Retry"}
                 </Button>
-              </form>
-            </Form>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => void signOut()}
+                >
+                  Sign out
+                </Button>
+              </div>
+            ) : (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your email" autoComplete="username" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type={showPassword ? "text" : "password"}
+                              placeholder="•••••••"
+                              className="pr-10"
+                              autoComplete="current-password"
+                              {...field}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword((value) => !value)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:text-foreground"
+                              aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="submit"
+                    className="w-full bg-brand text-white hover:bg-brand-dark"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Logging in..." : "Login"}
+                  </Button>
+                </form>
+              </Form>
+            )}
           </CardContent>
         </Card>
-
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Need access? Contact Sallam to activate your partner account.
-        </p>
-      </div>
+      </main>
     </div>
   );
 }

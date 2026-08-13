@@ -8,6 +8,7 @@ import {
   Settings,
 } from "lucide-react";
 import { useUniAuth } from "@/context/UniAuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -21,8 +22,9 @@ const navItems = [
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, account, loading, isDevPreview } = useUniAuth();
+  const { isAdmin, mode, roleLoading } = useAuthContext();
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand border-t-transparent" />
@@ -30,11 +32,16 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (isDevPreview || (user && account)) {
+  // Admins belong in /ops — never expose partner marketplace as their home
+  if (isAdmin && !isDevPreview) {
+    return <Navigate to="/ops" replace />;
+  }
+
+  if (isDevPreview || (user && account && mode === "partner")) {
     return <>{children}</>;
   }
 
-  return <Navigate to="/uni/login" replace />;
+  return <Navigate to="/login" replace />;
 }
 
 export function AppShell() {
@@ -44,7 +51,7 @@ export function AppShell() {
   const handleSignOut = async () => {
     await signOut();
     toast({ title: "Signed out" });
-    navigate("/uni/login");
+    navigate("/login");
   };
 
   return (
