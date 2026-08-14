@@ -68,7 +68,7 @@ export function OpsDialog({
         {description ? (
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
         ) : null}
-        {children ? <div className="mt-4">{children}</div> : null}
+        {children ? <div className="mt-4 max-h-[min(70vh,32rem)] overflow-y-auto pr-1">{children}</div> : null}
         {footer ? (
           <div className="mt-6 flex flex-wrap justify-end gap-2">{footer}</div>
         ) : (

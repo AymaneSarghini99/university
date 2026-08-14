@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { format } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { UniversityLogo } from "@/components/ops/UniversityLogo";
@@ -49,9 +50,12 @@ import {
   type ProgramTeachingLanguage,
   type RelationshipStatus,
   PROGRAM_DEGREE_TYPES,
+  PROGRAM_DURATION_PRESETS,
   PROGRAM_TEACHING_LANGUAGES,
   SCHOLARSHIP_TYPE_OPTIONS,
+  programDurationToForm,
   programMajorCategory,
+  resolveProgramDuration,
 } from "@/types/ops";
 import { VerificationBlock, formatLocation } from "@/components/ops/VerificationBlock";
 import {
@@ -64,6 +68,7 @@ import { OpsDialog, OpsTabs } from "@/components/ops/OpsTabs";
 import { OpsEmptyState, OpsInlineText, OpsSection } from "@/components/ops/OpsPage";
 import { OpsLoading, OpsPanel, OpsPanelBody, OpsPanelHeader } from "@/components/ops/OpsLayout";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -133,7 +138,8 @@ export default function OpsUniversityDetailPage() {
   const [programName, setProgramName] = useState("");
   const [degreeType, setDegreeType] = useState<ProgramDegreeType>("Chinese Language");
   const [language, setLanguage] = useState<ProgramTeachingLanguage>("Chinese");
-  const [programDuration, setProgramDuration] = useState("");
+  const [programDurationPreset, setProgramDurationPreset] = useState("__none__");
+  const [programDurationCustom, setProgramDurationCustom] = useState("");
   const [programNotes, setProgramNotes] = useState("");
   const [programActive, setProgramActive] = useState(true);
   const [offerProgramId, setOfferProgramId] = useState("");
@@ -247,7 +253,7 @@ export default function OpsUniversityDetailPage() {
         degree_type: degreeType,
         teaching_language: language,
         major_category: programMajorCategory(degreeType),
-        duration: programDuration.trim() || null,
+        duration: resolveProgramDuration(programDurationPreset, programDurationCustom),
         notes: programNotes.trim() || null,
         active: programActive,
       }),
@@ -416,7 +422,8 @@ export default function OpsUniversityDetailPage() {
     setProgramName("");
     setDegreeType("Chinese Language");
     setLanguage("Chinese");
-    setProgramDuration("");
+    setProgramDurationPreset("__none__");
+    setProgramDurationCustom("");
     setProgramNotes("");
     setProgramActive(true);
     setEditingProgram(null);
@@ -434,7 +441,9 @@ export default function OpsUniversityDetailPage() {
       program.degree_type === "Language" ? "Chinese Language" : program.degree_type;
     setDegreeType((normalizedDegree as ProgramDegreeType) || "Chinese Language");
     setLanguage((program.teaching_language as ProgramTeachingLanguage) || "Chinese");
-    setProgramDuration(program.duration ?? "");
+    const durationForm = programDurationToForm(program.duration);
+    setProgramDurationPreset(durationForm.preset);
+    setProgramDurationCustom(durationForm.custom);
     setProgramNotes(program.notes ?? "");
     setProgramActive(program.active);
     setProgramOpen(true);
@@ -459,6 +468,7 @@ export default function OpsUniversityDetailPage() {
 
   const openAddOffer = () => {
     resetOfferForm();
+    setTab("offers");
     setOfferOpen(true);
   };
 
@@ -502,7 +512,7 @@ export default function OpsUniversityDetailPage() {
         degree_type: degreeType,
         teaching_language: language,
         major_category: programMajorCategory(degreeType),
-        duration: programDuration.trim() || null,
+        duration: resolveProgramDuration(programDurationPreset, programDurationCustom),
         notes: programNotes.trim() || null,
         active: programActive,
       });
@@ -597,7 +607,7 @@ export default function OpsUniversityDetailPage() {
               <Plus className="h-4 w-4" /> Program
             </Button>
             <Button variant="outline" size="sm" onClick={openAddOffer}>
-              <Plus className="h-4 w-4" /> Offer
+              <Plus className="h-4 w-4" /> Offer & scholarship
             </Button>
             <Button variant="outline" size="sm" onClick={openAddContact}>
               <Plus className="h-4 w-4" /> Contact
@@ -759,10 +769,10 @@ export default function OpsUniversityDetailPage() {
 
       {tab === "offers" && (
         <OpsSection
-          title="Offers"
+          title="Offers & scholarships"
           action={
             <Button size="sm" onClick={openAddOffer}>
-              <Plus className="h-4 w-4" /> Add
+              <Plus className="h-4 w-4" /> Add offer
             </Button>
           }
         >
@@ -1021,12 +1031,28 @@ export default function OpsUniversityDetailPage() {
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Duration</label>
-            <Input
-              placeholder="e.g. 1 year, 4 years"
-              value={programDuration}
-              onChange={(e) => setProgramDuration(e.target.value)}
-              className="rounded-xl"
-            />
+            <Select value={programDurationPreset} onValueChange={setProgramDurationPreset}>
+              <SelectTrigger className="rounded-xl">
+                <SelectValue placeholder="Select duration" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Not set</SelectItem>
+                {PROGRAM_DURATION_PRESETS.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {d}
+                  </SelectItem>
+                ))}
+                <SelectItem value="__custom__">Other (custom)</SelectItem>
+              </SelectContent>
+            </Select>
+            {programDurationPreset === "__custom__" ? (
+              <Input
+                placeholder="e.g. 18 months, 2.5 years"
+                value={programDurationCustom}
+                onChange={(e) => setProgramDurationCustom(e.target.value)}
+                className="rounded-xl"
+              />
+            ) : null}
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Notes</label>
@@ -1060,7 +1086,8 @@ export default function OpsUniversityDetailPage() {
       <OpsDialog
         open={offerOpen}
         onClose={closeOfferDialog}
-        title={editingOffer ? "Edit offer" : "Add offer"}
+        title={editingOffer ? "Edit offer & scholarship" : "Add offer & scholarship"}
+        description="Link a program + intake to tuition and scholarship (50%, 100%, full, etc.)."
         footer={
           <>
             <Button variant="outline" onClick={closeOfferDialog}>Cancel</Button>
@@ -1114,6 +1141,36 @@ export default function OpsUniversityDetailPage() {
               className="rounded-xl"
             />
           </div>
+          <div className="rounded-xl border border-brand/20 bg-brand/[0.04] px-3 py-2.5 space-y-3">
+            <p className="text-xs font-medium text-brand">Scholarship (optional)</p>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Type</label>
+              <Select
+                value={scholarshipType || "__none__"}
+                onValueChange={(v) => setScholarshipType(v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger className="rounded-xl bg-white">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SCHOLARSHIP_TYPE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value || "__none__"} value={opt.value || "__none__"}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Notes</label>
+              <Textarea
+                placeholder="e.g. Merit-based; covers tuition + dorm; HSK 5 required"
+                value={scholarshipNotes}
+                onChange={(e) => setScholarshipNotes(e.target.value)}
+                className="min-h-[72px] rounded-xl bg-white"
+              />
+            </div>
+          </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Tuition (¥)</label>
             <Input
@@ -1124,39 +1181,15 @@ export default function OpsUniversityDetailPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Scholarship</label>
-            <Select
-              value={scholarshipType || "__none__"}
-              onValueChange={(v) => setScholarshipType(v === "__none__" ? "" : v)}
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="None" />
-              </SelectTrigger>
-              <SelectContent>
-                {SCHOLARSHIP_TYPE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value || "__none__"} value={opt.value || "__none__"}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Scholarship notes</label>
-            <Textarea
-              placeholder="e.g. Merit-based; covers tuition + dorm; HSK 5 required"
-              value={scholarshipNotes}
-              onChange={(e) => setScholarshipNotes(e.target.value)}
-              className="min-h-[80px] rounded-xl"
-            />
-          </div>
-          <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Deadline</label>
-            <Input
-              placeholder="e.g. 2027-06-30"
-              value={offerDeadline}
-              onChange={(e) => setOfferDeadline(e.target.value)}
-              className="rounded-xl"
+            <DatePicker
+              value={offerDeadline ? new Date(`${offerDeadline}T12:00:00`) : undefined}
+              onChange={(date) =>
+                setOfferDeadline(date instanceof Date ? format(date, "yyyy-MM-dd") : "")
+              }
+              inputValue={offerDeadline}
+              onTextChange={setOfferDeadline}
+              placeholder="YYYY-MM-DD"
             />
           </div>
           <div className="space-y-1.5">

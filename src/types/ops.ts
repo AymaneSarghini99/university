@@ -292,6 +292,39 @@ export const PROGRAM_TEACHING_LANGUAGES = ["Chinese", "English"] as const;
 
 export type ProgramTeachingLanguage = (typeof PROGRAM_TEACHING_LANGUAGES)[number];
 
+export const PROGRAM_DURATION_PRESETS = [
+  "1 semester",
+  "1 year",
+  "2 years",
+  "3 years",
+  "4 years",
+  "5 years",
+  "6 years",
+] as const;
+
+export type ProgramDurationPreset = (typeof PROGRAM_DURATION_PRESETS)[number];
+
+export function resolveProgramDuration(
+  preset: string,
+  custom: string,
+): string | null {
+  if (preset === "__custom__") return custom.trim() || null;
+  if (!preset || preset === "__none__") return null;
+  return preset;
+}
+
+export function programDurationToForm(duration: string | null | undefined): {
+  preset: string;
+  custom: string;
+} {
+  const value = duration?.trim() ?? "";
+  if (!value) return { preset: "__none__", custom: "" };
+  if ((PROGRAM_DURATION_PRESETS as readonly string[]).includes(value)) {
+    return { preset: value, custom: "" };
+  }
+  return { preset: "__custom__", custom: value };
+}
+
 export function programMajorCategory(degreeType: string): string {
   if (degreeType === "Chinese Language") return "Chinese Language";
   if (degreeType === "Foundation Program") return "Foundation";
