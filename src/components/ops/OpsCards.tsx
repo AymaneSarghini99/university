@@ -205,6 +205,8 @@ export function OpsProgramCard({
   duration,
   intakeHint,
   to,
+  actions,
+  inactive,
 }: {
   name: string;
   degreeType?: string | null;
@@ -212,15 +214,29 @@ export function OpsProgramCard({
   duration?: string | null;
   intakeHint?: string | null;
   to?: string;
+  actions?: React.ReactNode;
+  inactive?: boolean;
 }) {
   const inner = (
-    <div className="rounded-xl border border-black/[0.06] bg-white p-4 shadow-sm transition hover:shadow-card">
+    <div
+      className={cn(
+        "rounded-xl border border-black/[0.06] bg-white p-4 shadow-sm transition hover:shadow-card",
+        inactive && "opacity-60",
+      )}
+    >
       <p className="font-medium text-foreground">{name}</p>
       <p className="mt-1 text-sm text-muted-foreground">
         {[duration, intakeHint, degreeType, language].filter(Boolean).join(" · ") ||
           "Details pending"}
       </p>
-      {to ? <p className="mt-3 text-xs font-medium text-brand">View</p> : null}
+      {inactive ? (
+        <p className="mt-2 text-xs font-medium text-muted-foreground">Inactive</p>
+      ) : null}
+      {actions ? (
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-black/[0.04] pt-3">{actions}</div>
+      ) : to ? (
+        <p className="mt-3 text-xs font-medium text-brand">View</p>
+      ) : null}
     </div>
   );
 

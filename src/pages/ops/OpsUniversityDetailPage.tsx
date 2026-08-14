@@ -2,13 +2,13 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { UniversityLogo } from "@/components/ops/UniversityLogo";
-import { resolveCatalogLogoUrl } from "@/lib/libraryLogos";
 import { scaffoldUniversityMedia } from "@/lib/scaffoldUniversityMedia";
 import { universitySlug } from "@/lib/universitySlug";
 import {
   ChevronLeft,
   Mail,
   MessageCircle,
+  Pencil,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -17,12 +17,16 @@ import {
   createOffer,
   createProgram,
   BLANK_UNIVERSITY_NAME,
+  deleteContact,
+  deleteOffer,
   deleteOpsUniversity,
   fetchContacts,
   fetchOffers,
   fetchOpsUniversity,
   fetchPrograms,
+  updateContact,
   updateOpsUniversity,
+  updateProgram,
   upsertPartnership,
   verifyOffer,
 } from "@/services/opsService";
@@ -36,6 +40,9 @@ import {
   type OfferStatus,
   type OperationalStatus,
   type OpsUniversity,
+  type OpsProgram,
+  type OpsContact,
+  type ContactStatus,
   type ProgramDegreeType,
   type ProgramTeachingLanguage,
   type RelationshipStatus,
@@ -55,6 +62,7 @@ import { OpsEmptyState, OpsInlineText, OpsSection } from "@/components/ops/OpsPa
 import { OpsLoading, OpsPanel, OpsPanelBody, OpsPanelHeader } from "@/components/ops/OpsLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -87,9 +95,15 @@ export default function OpsUniversityDetailPage() {
   const { user } = useAuthContext();
   const [tab, setTab] = useState("overview");
   const [programOpen, setProgramOpen] = useState(false);
+  const [editingProgram, setEditingProgram] = useState<OpsProgram | null>(null);
   const [offerOpen, setOfferOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [deleteOfferId, setDeleteOfferId] = useState<string | null>(null);
+  const [deleteOfferLabel, setDeleteOfferLabel] = useState("");
+  const [deleteContactId, setDeleteContactId] = useState<string | null>(null);
+  const [deleteContactLabel, setDeleteContactLabel] = useState("");
+  const [editingContact, setEditingContact] = useState<OpsContact | null>(null);
 
   const uniQ = useQuery({
     queryKey: ["ops-university", id],
@@ -115,14 +129,21 @@ export default function OpsUniversityDetailPage() {
   const [programName, setProgramName] = useState("");
   const [degreeType, setDegreeType] = useState<ProgramDegreeType>("Chinese Language");
   const [language, setLanguage] = useState<ProgramTeachingLanguage>("Chinese");
+  const [programDuration, setProgramDuration] = useState("");
+  const [programNotes, setProgramNotes] = useState("");
+  const [programActive, setProgramActive] = useState(true);
   const [offerProgramId, setOfferProgramId] = useState("");
   const [intake, setIntake] = useState(CURRENT_PRIMARY_INTAKE);
   const [tuition, setTuition] = useState("10000");
   const [offerStatus, setOfferStatus] = useState<OfferStatus>("potential");
   const [infoSource, setInfoSource] = useState("");
   const [contactName, setContactName] = useState("");
+  const [contactPosition, setContactPosition] = useState("");
   const [contactWechat, setContactWechat] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactNotes, setContactNotes] = useState("");
+  const [contactStatus, setContactStatus] = useState<ContactStatus>("active");
   const [verifyOfferId, setVerifyOfferId] = useState<string | null>(null);
   const [verifyOfferLabel, setVerifyOfferLabel] = useState("");
 
@@ -219,13 +240,13 @@ export default function OpsUniversityDetailPage() {
         degree_type: degreeType,
         teaching_language: language,
         major_category: programMajorCategory(degreeType),
+        duration: programDuration.trim() || null,
+        notes: programNotes.trim() || null,
+        active: programActive,
       }),
     onSuccess: () => {
       toast({ title: "Added" });
-      setProgramName("");
-      setDegreeType("Chinese Language");
-      setLanguage("Chinese");
-      setProgramOpen(false);
+      closeProgramDialog();
       qc.invalidateQueries({ queryKey: ["ops-programs", id] });
     },
     onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
@@ -258,19 +279,87 @@ export default function OpsUniversityDetailPage() {
       createContact({
         university_id: id,
         name: contactName,
+        position: contactPosition.trim() || null,
         wechat: contactWechat || null,
         email: contactEmail || null,
+        phone: contactPhone || null,
+        notes: contactNotes.trim() || null,
         contact_type: "international_office",
+        status: contactStatus,
       }),
     onSuccess: () => {
       toast({ title: "Added" });
-      setContactName("");
-      setContactWechat("");
-      setContactEmail("");
-      setContactOpen(false);
+      closeContactDialog();
       qc.invalidateQueries({ queryKey: ["ops-contacts", id] });
     },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
+
+  const updateContactMutation = useMutation({
+    mutationFn: () => {
+      if (!editingContact) throw new Error("No contact selected");
+      return updateContact(editingContact.id, {
+        name: contactName.trim(),
+        position: contactPosition.trim() || null,
+        wechat: contactWechat.trim() || null,
+        email: contactEmail.trim() || null,
+        phone: contactPhone.trim() || null,
+        notes: contactNotes.trim() || null,
+        status: contactStatus,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Contact updated" });
+      closeContactDialog();
+      qc.invalidateQueries({ queryKey: ["ops-contacts", id] });
+    },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteContactMutation = useMutation({
+    mutationFn: (contactId: string) => deleteContact(contactId),
+    onSuccess: () => {
+      toast({ title: "Contact deleted" });
+      setDeleteContactId(null);
+      qc.invalidateQueries({ queryKey: ["ops-contacts", id] });
+      qc.invalidateQueries({ queryKey: ["ops-dashboard"] });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Could not delete contact", description: e.message, variant: "destructive" }),
+  });
+
+  const resetContactForm = () => {
+    setContactName("");
+    setContactPosition("");
+    setContactWechat("");
+    setContactEmail("");
+    setContactPhone("");
+    setContactNotes("");
+    setContactStatus("active");
+    setEditingContact(null);
+  };
+
+  const openAddContact = () => {
+    resetContactForm();
+    setContactOpen(true);
+  };
+
+  const openEditContact = (contact: OpsContact) => {
+    setEditingContact(contact);
+    setContactName(contact.name);
+    setContactPosition(contact.position ?? "");
+    setContactWechat(contact.wechat ?? "");
+    setContactEmail(contact.email ?? "");
+    setContactPhone(contact.phone ?? "");
+    setContactNotes(contact.notes ?? "");
+    setContactStatus(contact.status);
+    setContactOpen(true);
+  };
+
+  const closeContactDialog = () => {
+    setContactOpen(false);
+    resetContactForm();
+  };
 
   const verifyMutation = useMutation({
     mutationFn: (input: { offerId: string; infoSource: string; sourceUrl: string; verificationNotes: string }) =>
@@ -285,6 +374,75 @@ export default function OpsUniversityDetailPage() {
       setVerifyOfferId(null);
       qc.invalidateQueries({ queryKey: ["ops-offers", id] });
       qc.invalidateQueries({ queryKey: ["ops-dashboard"] });
+    },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+
+  const resetProgramForm = () => {
+    setProgramName("");
+    setDegreeType("Chinese Language");
+    setLanguage("Chinese");
+    setProgramDuration("");
+    setProgramNotes("");
+    setProgramActive(true);
+    setEditingProgram(null);
+  };
+
+  const openAddProgram = () => {
+    resetProgramForm();
+    setProgramOpen(true);
+  };
+
+  const openEditProgram = (program: OpsProgram) => {
+    setEditingProgram(program);
+    setProgramName(program.name);
+    const normalizedDegree =
+      program.degree_type === "Language" ? "Chinese Language" : program.degree_type;
+    setDegreeType((normalizedDegree as ProgramDegreeType) || "Chinese Language");
+    setLanguage((program.teaching_language as ProgramTeachingLanguage) || "Chinese");
+    setProgramDuration(program.duration ?? "");
+    setProgramNotes(program.notes ?? "");
+    setProgramActive(program.active);
+    setProgramOpen(true);
+  };
+
+  const closeProgramDialog = () => {
+    setProgramOpen(false);
+    resetProgramForm();
+  };
+
+  const deleteOfferMutation = useMutation({
+    mutationFn: (offerId: string) => deleteOffer(offerId),
+    onSuccess: () => {
+      toast({ title: "Offer deleted" });
+      setDeleteOfferId(null);
+      qc.invalidateQueries({ queryKey: ["ops-offers", id] });
+      qc.invalidateQueries({ queryKey: ["ops-offers"] });
+      qc.invalidateQueries({ queryKey: ["ops-offers-list"] });
+      qc.invalidateQueries({ queryKey: ["ops-dashboard"] });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Could not delete offer", description: e.message, variant: "destructive" }),
+  });
+
+  const updateProgramMutation = useMutation({
+    mutationFn: () => {
+      if (!editingProgram) throw new Error("No program selected");
+      return updateProgram(editingProgram.id, {
+        name: programName.trim(),
+        degree_type: degreeType,
+        teaching_language: language,
+        major_category: programMajorCategory(degreeType),
+        duration: programDuration.trim() || null,
+        notes: programNotes.trim() || null,
+        active: programActive,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Program updated" });
+      closeProgramDialog();
+      qc.invalidateQueries({ queryKey: ["ops-programs", id] });
+      qc.invalidateQueries({ queryKey: ["ops-offers", id] });
     },
     onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
@@ -341,7 +499,7 @@ export default function OpsUniversityDetailPage() {
           <div className="flex gap-4">
             <UniversityLogo
               slug={uni.public_catalog_slug ?? uni.slug}
-              logoUrl={uni.logo_url ?? resolveCatalogLogoUrl(uni.public_catalog_slug ?? uni.slug, null)}
+              logoUrl={uni.logo_url}
               name={uni.name}
               className="h-14 w-14 shrink-0"
               imgClassName="h-10 w-10"
@@ -366,13 +524,13 @@ export default function OpsUniversityDetailPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setProgramOpen(true)}>
+            <Button variant="outline" size="sm" onClick={openAddProgram}>
               <Plus className="h-4 w-4" /> Program
             </Button>
             <Button variant="outline" size="sm" onClick={() => setOfferOpen(true)}>
               <Plus className="h-4 w-4" /> Offer
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setContactOpen(true)}>
+            <Button variant="outline" size="sm" onClick={openAddContact}>
               <Plus className="h-4 w-4" /> Contact
             </Button>
             <Button
@@ -496,7 +654,7 @@ export default function OpsUniversityDetailPage() {
         <OpsSection
           title="Programs"
           action={
-            <Button size="sm" onClick={() => setProgramOpen(true)}>
+            <Button size="sm" onClick={openAddProgram}>
               <Plus className="h-4 w-4" /> Add
             </Button>
           }
@@ -505,7 +663,7 @@ export default function OpsUniversityDetailPage() {
             <OpsEmptyState
               title="No programs"
               action={
-                <Button onClick={() => setProgramOpen(true)}>Add</Button>
+                <Button onClick={openAddProgram}>Add</Button>
               }
             />
           ) : (
@@ -517,7 +675,12 @@ export default function OpsUniversityDetailPage() {
                   degreeType={p.degree_type}
                   language={p.teaching_language}
                   duration={p.duration}
-                  intakeHint="September Intake"
+                  inactive={!p.active}
+                  actions={
+                    <Button size="sm" variant="outline" onClick={() => openEditProgram(p)}>
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Button>
+                  }
                 />
               ))}
             </div>
@@ -567,6 +730,17 @@ export default function OpsUniversityDetailPage() {
                           Verify
                         </Button>
                       ) : null}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                        onClick={() => {
+                          setDeleteOfferId(o.id);
+                          setDeleteOfferLabel(`${o.program?.name ?? "Program"} · ${o.intake}`);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                      </Button>
                     </>
                   }
                 />
@@ -580,7 +754,7 @@ export default function OpsUniversityDetailPage() {
         <OpsSection
           title="Contacts"
           action={
-            <Button size="sm" onClick={() => setContactOpen(true)}>
+            <Button size="sm" onClick={openAddContact}>
               <Plus className="h-4 w-4" /> Add
             </Button>
           }
@@ -588,14 +762,14 @@ export default function OpsUniversityDetailPage() {
           {(contactsQ.data ?? []).length === 0 ? (
             <OpsEmptyState
               title="No contacts"
-              action={<Button onClick={() => setContactOpen(true)}>Add</Button>}
+              action={<Button onClick={openAddContact}>Add</Button>}
             />
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {(contactsQ.data ?? []).map((c) => (
                 <article
                   key={c.id}
-                  className="rounded-2xl border border-black/[0.06] bg-white p-4 shadow-sm"
+                  className={`rounded-2xl border border-black/[0.06] bg-white p-4 shadow-sm ${c.status !== "active" ? "opacity-60" : ""}`}
                 >
                   <p className="font-medium">{c.name}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
@@ -612,15 +786,33 @@ export default function OpsUniversityDetailPage() {
                         <MessageCircle className="h-3.5 w-3.5" /> {c.wechat}
                       </p>
                     ) : null}
+                    {c.phone ? <p>{c.phone}</p> : null}
+                    {c.notes ? <p className="text-foreground/80">{c.notes}</p> : null}
                   </div>
                   {c.next_follow_up_at ? (
                     <p className="mt-3 text-xs text-muted-foreground">
-                      {new Date(c.next_follow_up_at).toLocaleDateString()}
+                      Follow up · {new Date(c.next_follow_up_at).toLocaleDateString()}
                     </p>
                   ) : null}
-                  <Button variant="outline" size="sm" className="mt-3" onClick={() => followUpMutation.mutate(7)}>
-                    Follow up
-                  </Button>
+                  <div className="mt-3 flex flex-wrap gap-2 border-t border-black/[0.04] pt-3">
+                    <Button variant="outline" size="sm" onClick={() => openEditContact(c)}>
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => followUpMutation.mutate(7)}>
+                      Follow up
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                      onClick={() => {
+                        setDeleteContactId(c.id);
+                        setDeleteContactLabel(c.name);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                    </Button>
+                  </div>
                 </article>
               ))}
             </div>
@@ -694,13 +886,22 @@ export default function OpsUniversityDetailPage() {
 
       <OpsDialog
         open={programOpen}
-        onClose={() => setProgramOpen(false)}
-        title="Add program"
+        onClose={closeProgramDialog}
+        title={editingProgram ? "Edit program" : "Add program"}
         footer={
           <>
-            <Button variant="outline" onClick={() => setProgramOpen(false)}>Cancel</Button>
-            <Button disabled={!programName.trim() || programMutation.isPending} onClick={() => programMutation.mutate()}>
-              Add
+            <Button variant="outline" onClick={closeProgramDialog}>Cancel</Button>
+            <Button
+              disabled={
+                !programName.trim() ||
+                programMutation.isPending ||
+                updateProgramMutation.isPending
+              }
+              onClick={() =>
+                editingProgram ? updateProgramMutation.mutate() : programMutation.mutate()
+              }
+            >
+              {editingProgram ? "Save" : "Add"}
             </Button>
           </>
         }
@@ -745,6 +946,41 @@ export default function OpsUniversityDetailPage() {
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Duration</label>
+            <Input
+              placeholder="e.g. 1 year, 4 years"
+              value={programDuration}
+              onChange={(e) => setProgramDuration(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Notes</label>
+            <Textarea
+              placeholder="Optional details, intake notes, requirements…"
+              value={programNotes}
+              onChange={(e) => setProgramNotes(e.target.value)}
+              className="min-h-[80px] rounded-xl"
+            />
+          </div>
+          {editingProgram ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Status</label>
+              <Select
+                value={programActive ? "active" : "inactive"}
+                onValueChange={(v) => setProgramActive(v === "active")}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
         </div>
       </OpsDialog>
 
@@ -794,21 +1030,99 @@ export default function OpsUniversityDetailPage() {
 
       <OpsDialog
         open={contactOpen}
-        onClose={() => setContactOpen(false)}
-        title="Add contact"
+        onClose={closeContactDialog}
+        title={editingContact ? "Edit contact" : "Add contact"}
         footer={
           <>
-            <Button variant="outline" onClick={() => setContactOpen(false)}>Cancel</Button>
-            <Button disabled={!contactName.trim() || contactMutation.isPending} onClick={() => contactMutation.mutate()}>
-              Add
+            <Button variant="outline" onClick={closeContactDialog}>Cancel</Button>
+            <Button
+              disabled={
+                !contactName.trim() ||
+                contactMutation.isPending ||
+                updateContactMutation.isPending
+              }
+              onClick={() =>
+                editingContact ? updateContactMutation.mutate() : contactMutation.mutate()
+              }
+            >
+              {editingContact ? "Save" : "Add"}
             </Button>
           </>
         }
       >
         <div className="space-y-3">
-          <Input placeholder="Contact name" value={contactName} onChange={(e) => setContactName(e.target.value)} className="rounded-xl" />
-          <Input placeholder="WeChat" value={contactWechat} onChange={(e) => setContactWechat(e.target.value)} className="rounded-xl" />
-          <Input placeholder="Email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} className="rounded-xl" />
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Name</label>
+            <Input
+              placeholder="Contact name"
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Position</label>
+            <Input
+              placeholder="e.g. International Office"
+              value={contactPosition}
+              onChange={(e) => setContactPosition(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Email</label>
+            <Input
+              placeholder="Email"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">WeChat</label>
+            <Input
+              placeholder="WeChat"
+              value={contactWechat}
+              onChange={(e) => setContactWechat(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Phone</label>
+            <Input
+              placeholder="Phone"
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Notes</label>
+            <Textarea
+              placeholder="Optional notes"
+              value={contactNotes}
+              onChange={(e) => setContactNotes(e.target.value)}
+              className="min-h-[80px] rounded-xl"
+            />
+          </div>
+          {editingContact ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Status</label>
+              <Select
+                value={contactStatus}
+                onValueChange={(v) => setContactStatus(v as ContactStatus)}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
         </div>
       </OpsDialog>
 
@@ -828,6 +1142,52 @@ export default function OpsUniversityDetailPage() {
               onClick={() => removeMutation.mutate()}
             >
               Remove
+            </Button>
+          </>
+        }
+      />
+
+      <OpsDialog
+        open={Boolean(deleteContactId)}
+        onClose={() => setDeleteContactId(null)}
+        title="Delete contact?"
+        description={`Remove ${deleteContactLabel}?`}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeleteContactId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteContactMutation.isPending}
+              onClick={() => {
+                if (deleteContactId) deleteContactMutation.mutate(deleteContactId);
+              }}
+            >
+              Delete
+            </Button>
+          </>
+        }
+      />
+
+      <OpsDialog
+        open={Boolean(deleteOfferId)}
+        onClose={() => setDeleteOfferId(null)}
+        title="Delete offer?"
+        description={`Remove ${deleteOfferLabel}? Linked student snapshots are preserved.`}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeleteOfferId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteOfferMutation.isPending}
+              onClick={() => {
+                if (deleteOfferId) deleteOfferMutation.mutate(deleteOfferId);
+              }}
+            >
+              Delete
             </Button>
           </>
         }

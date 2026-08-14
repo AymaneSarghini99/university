@@ -369,6 +369,11 @@ export async function updateOffer(id: string, patch: Partial<OpsOffer>): Promise
   if (error) throw error;
 }
 
+export async function deleteOffer(id: string): Promise<void> {
+  const { error } = await supabase.from("ops_offers").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // ── Contacts ─────────────────────────────────────────────────────────────────
 
 export async function fetchContacts(universityId: string): Promise<OpsContact[]> {
@@ -408,6 +413,11 @@ export async function createContact(
 
 export async function updateContact(id: string, patch: Partial<OpsContact>): Promise<void> {
   const { error } = await supabase.from("ops_university_contacts").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteContact(id: string): Promise<void> {
+  const { error } = await supabase.from("ops_university_contacts").delete().eq("id", id);
   if (error) throw error;
 }
 

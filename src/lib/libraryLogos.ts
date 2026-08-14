@@ -2,19 +2,25 @@ import logoPathsJson from "@/data/university-logos.json";
 
 const logoPaths = logoPathsJson as Record<string, string>;
 
+const DEFAULT_WWW_ORIGIN = "https://www.sallam.ma";
+
 /** Public www origin for catalog media (logos live on www.sallam.ma). */
 export const wwwBaseUrl = (
   import.meta.env.DEV
     ? ""
-    : ((import.meta.env.VITE_WWW_URL as string | undefined) ?? "https://www.sallam.ma")
+    : (() => {
+        const configured = (import.meta.env.VITE_WWW_URL as string | undefined)?.trim();
+        return configured || DEFAULT_WWW_ORIGIN;
+      })()
 ).replace(/\/$/, "");
 
 export function resolveCatalogLogoUrl(
   slug: string | null | undefined,
   explicitUrl?: string | null,
 ): string | null {
+  const normalizedExplicit = explicitUrl?.trim() || undefined;
   let path =
-    explicitUrl ??
+    normalizedExplicit ??
     (slug ? logoPaths[slug] : undefined) ??
     (slug ? `/universities/${slug}/logo.webp` : undefined);
 

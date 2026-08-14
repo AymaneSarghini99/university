@@ -1,5 +1,6 @@
 import { Building2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { opsUniversityLogoCandidates } from "@/lib/opsUniversityLogo";
 import { resolveCatalogLogoUrl } from "@/lib/libraryLogos";
 import { cn } from "@/lib/utils";
 
@@ -16,8 +17,22 @@ export function UniversityLogo({
   className?: string;
   imgClassName?: string;
 }) {
-  const src = resolveCatalogLogoUrl(slug, logoUrl);
-  const [failed, setFailed] = useState(false);
+  const candidates = useMemo(() => {
+    if (name) {
+      return opsUniversityLogoCandidates({
+        name,
+        slug: slug ?? null,
+        public_catalog_slug: slug ?? null,
+        logo_url: logoUrl ?? null,
+      });
+    }
+    const primary = resolveCatalogLogoUrl(slug, logoUrl);
+    return primary ? [primary] : [];
+  }, [slug, logoUrl, name]);
+
+  const [index, setIndex] = useState(0);
+  const src = candidates[index] ?? null;
+  const failed = index >= candidates.length;
 
   if (!src || failed) {
     return (
@@ -40,7 +55,7 @@ export function UniversityLogo({
         alt=""
         className={cn("h-full w-full object-contain", imgClassName)}
         loading="lazy"
-        onError={() => setFailed(true)}
+        onError={() => setIndex((i) => i + 1)}
       />
     </div>
   );

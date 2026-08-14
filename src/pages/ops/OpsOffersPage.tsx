@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { fetchOffers, verifyOffer } from "@/services/opsService";
+import { fetchOffers, verifyOffer, deleteOffer } from "@/services/opsService";
 import { OFFER_LABELS, OFFER_STATUSES, type OfferStatus } from "@/types/ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,8 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/context/AuthContext";
 import { formatIntakeLabel, PINNED_INTAKES } from "@/lib/operatingCycle";
+import { Trash2 } from "lucide-react";
+import { OpsDialog } from "@/components/ops/OpsTabs";
 
 export default function OpsOffersPage() {
   const { user } = useAuthContext();
@@ -32,6 +34,8 @@ export default function OpsOffersPage() {
   const [search, setSearch] = useState("");
   const [verifyOfferId, setVerifyOfferId] = useState<string | null>(null);
   const [verifyOfferLabel, setVerifyOfferLabel] = useState("");
+  const [deleteOfferId, setDeleteOfferId] = useState<string | null>(null);
+  const [deleteOfferLabel, setDeleteOfferLabel] = useState("");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["ops-offers-list", status, intake, maxTuition, scholarshipOnly, search],
@@ -65,6 +69,19 @@ export default function OpsOffersPage() {
       qc.invalidateQueries({ queryKey: ["ops-dashboard"] });
     },
     onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteOfferMutation = useMutation({
+    mutationFn: (offerId: string) => deleteOffer(offerId),
+    onSuccess: () => {
+      toast({ title: "Offer deleted" });
+      setDeleteOfferId(null);
+      qc.invalidateQueries({ queryKey: ["ops-offers-list"] });
+      qc.invalidateQueries({ queryKey: ["ops-offers"] });
+      qc.invalidateQueries({ queryKey: ["ops-dashboard"] });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Could not delete offer", description: e.message, variant: "destructive" }),
   });
 
   return (
@@ -183,12 +200,48 @@ export default function OpsOffersPage() {
                           Verify
                         </Button>
                       ) : null}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                        onClick={() => {
+                          setDeleteOfferId(o.id);
+                          setDeleteOfferLabel(
+                            `${o.university?.name ?? "University"} · ${o.program?.name ?? "Program"} · ${o.intake}`,
+                          );
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                      </Button>
                     </>
                   }
             />
           ))}
         </div>
       )}
+
+      <OpsDialog
+        open={Boolean(deleteOfferId)}
+        onClose={() => setDeleteOfferId(null)}
+        title="Delete offer?"
+        description={`Remove ${deleteOfferLabel}? Linked student snapshots are preserved.`}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeleteOfferId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteOfferMutation.isPending}
+              onClick={() => {
+                if (deleteOfferId) deleteOfferMutation.mutate(deleteOfferId);
+              }}
+            >
+              Delete
+            </Button>
+          </>
+        }
+      />
 
       <VerifyOfferDialog
         open={Boolean(verifyOfferId)}
