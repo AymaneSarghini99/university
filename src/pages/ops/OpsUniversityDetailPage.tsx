@@ -25,6 +25,7 @@ import {
   fetchOpsUniversity,
   fetchPrograms,
   updateContact,
+  updateOffer,
   updateOpsUniversity,
   updateProgram,
   upsertPartnership,
@@ -41,6 +42,7 @@ import {
   type OperationalStatus,
   type OpsUniversity,
   type OpsProgram,
+  type OpsOffer,
   type OpsContact,
   type ContactStatus,
   type ProgramDegreeType,
@@ -48,6 +50,7 @@ import {
   type RelationshipStatus,
   PROGRAM_DEGREE_TYPES,
   PROGRAM_TEACHING_LANGUAGES,
+  SCHOLARSHIP_TYPE_OPTIONS,
   programMajorCategory,
 } from "@/types/ops";
 import { VerificationBlock, formatLocation } from "@/components/ops/VerificationBlock";
@@ -97,6 +100,7 @@ export default function OpsUniversityDetailPage() {
   const [programOpen, setProgramOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState<OpsProgram | null>(null);
   const [offerOpen, setOfferOpen] = useState(false);
+  const [editingOffer, setEditingOffer] = useState<OpsOffer | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [deleteOfferId, setDeleteOfferId] = useState<string | null>(null);
@@ -135,6 +139,9 @@ export default function OpsUniversityDetailPage() {
   const [offerProgramId, setOfferProgramId] = useState("");
   const [intake, setIntake] = useState(CURRENT_PRIMARY_INTAKE);
   const [tuition, setTuition] = useState("10000");
+  const [scholarshipType, setScholarshipType] = useState("");
+  const [scholarshipNotes, setScholarshipNotes] = useState("");
+  const [offerDeadline, setOfferDeadline] = useState("");
   const [offerStatus, setOfferStatus] = useState<OfferStatus>("potential");
   const [infoSource, setInfoSource] = useState("");
   const [contactName, setContactName] = useState("");
@@ -260,6 +267,9 @@ export default function OpsUniversityDetailPage() {
         intake,
         tuition: Number(tuition) || null,
         currency: "CNY",
+        scholarship_type: scholarshipType.trim() || null,
+        scholarship_notes: scholarshipNotes.trim() || null,
+        deadline: offerDeadline.trim() || null,
         status: offerStatus,
         info_source: infoSource || null,
         last_verified_at: offerStatus === "active" ? new Date().toISOString() : null,
@@ -267,11 +277,35 @@ export default function OpsUniversityDetailPage() {
       }),
     onSuccess: () => {
       toast({ title: "Added" });
-      setOfferOpen(false);
+      closeOfferDialog();
       qc.invalidateQueries({ queryKey: ["ops-offers", id] });
       qc.invalidateQueries({ queryKey: ["ops-dashboard"] });
     },
     onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+
+  const updateOfferMutation = useMutation({
+    mutationFn: () => {
+      if (!editingOffer) throw new Error("No offer selected");
+      return updateOffer(editingOffer.id, {
+        intake,
+        tuition: Number(tuition) || null,
+        scholarship_type: scholarshipType.trim() || null,
+        scholarship_notes: scholarshipNotes.trim() || null,
+        deadline: offerDeadline.trim() || null,
+        status: offerStatus,
+        info_source: infoSource.trim() || null,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Offer updated" });
+      closeOfferDialog();
+      qc.invalidateQueries({ queryKey: ["ops-offers", id] });
+      qc.invalidateQueries({ queryKey: ["ops-offers-list"] });
+      qc.invalidateQueries({ queryKey: ["ops-dashboard"] });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Could not save offer", description: e.message, variant: "destructive" }),
   });
 
   const contactMutation = useMutation({
@@ -411,6 +445,41 @@ export default function OpsUniversityDetailPage() {
     resetProgramForm();
   };
 
+  const resetOfferForm = () => {
+    setOfferProgramId("");
+    setIntake(CURRENT_PRIMARY_INTAKE);
+    setTuition("10000");
+    setScholarshipType("");
+    setScholarshipNotes("");
+    setOfferDeadline("");
+    setOfferStatus("potential");
+    setInfoSource("");
+    setEditingOffer(null);
+  };
+
+  const openAddOffer = () => {
+    resetOfferForm();
+    setOfferOpen(true);
+  };
+
+  const openEditOffer = (offer: OpsOffer & { program?: OpsProgram | null }) => {
+    setEditingOffer(offer);
+    setOfferProgramId(offer.program_id);
+    setIntake(offer.intake);
+    setTuition(offer.tuition != null ? String(offer.tuition) : "");
+    setScholarshipType(offer.scholarship_type ?? "");
+    setScholarshipNotes(offer.scholarship_notes ?? "");
+    setOfferDeadline(offer.deadline ?? "");
+    setOfferStatus(offer.status);
+    setInfoSource(offer.info_source ?? "");
+    setOfferOpen(true);
+  };
+
+  const closeOfferDialog = () => {
+    setOfferOpen(false);
+    resetOfferForm();
+  };
+
   const deleteOfferMutation = useMutation({
     mutationFn: (offerId: string) => deleteOffer(offerId),
     onSuccess: () => {
@@ -527,7 +596,7 @@ export default function OpsUniversityDetailPage() {
             <Button variant="outline" size="sm" onClick={openAddProgram}>
               <Plus className="h-4 w-4" /> Program
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setOfferOpen(true)}>
+            <Button variant="outline" size="sm" onClick={openAddOffer}>
               <Plus className="h-4 w-4" /> Offer
             </Button>
             <Button variant="outline" size="sm" onClick={openAddContact}>
@@ -692,7 +761,7 @@ export default function OpsUniversityDetailPage() {
         <OpsSection
           title="Offers"
           action={
-            <Button size="sm" onClick={() => setOfferOpen(true)}>
+            <Button size="sm" onClick={openAddOffer}>
               <Plus className="h-4 w-4" /> Add
             </Button>
           }
@@ -700,7 +769,7 @@ export default function OpsUniversityDetailPage() {
           {(offersQ.data ?? []).length === 0 ? (
             <OpsEmptyState
               title="No offers"
-              action={<Button onClick={() => setOfferOpen(true)}>Add</Button>}
+              action={<Button onClick={openAddOffer}>Add</Button>}
             />
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
@@ -713,6 +782,7 @@ export default function OpsUniversityDetailPage() {
                   tuition={o.tuition}
                   currency={o.currency}
                   scholarship={o.scholarship_type ?? undefined}
+                  scholarshipNotes={o.scholarship_notes ?? undefined}
                   deadline={o.deadline ?? undefined}
                   infoSource={o.info_source}
                   lastVerifiedAt={o.last_verified_at}
@@ -730,6 +800,9 @@ export default function OpsUniversityDetailPage() {
                           Verify
                         </Button>
                       ) : null}
+                      <Button size="sm" variant="outline" onClick={() => openEditOffer(o)}>
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -986,45 +1059,130 @@ export default function OpsUniversityDetailPage() {
 
       <OpsDialog
         open={offerOpen}
-        onClose={() => setOfferOpen(false)}
-        title="Add offer"
+        onClose={closeOfferDialog}
+        title={editingOffer ? "Edit offer" : "Add offer"}
         footer={
           <>
-            <Button variant="outline" onClick={() => setOfferOpen(false)}>Cancel</Button>
-            <Button disabled={!offerProgramId || !intake || offerMutation.isPending} onClick={() => offerMutation.mutate()}>
-              Add
+            <Button variant="outline" onClick={closeOfferDialog}>Cancel</Button>
+            <Button
+              disabled={
+                !offerProgramId ||
+                !intake ||
+                offerMutation.isPending ||
+                updateOfferMutation.isPending
+              }
+              onClick={() =>
+                editingOffer ? updateOfferMutation.mutate() : offerMutation.mutate()
+              }
+            >
+              {editingOffer ? "Save" : "Add"}
             </Button>
           </>
         }
       >
         <div className="space-y-3">
-          <Select value={offerProgramId} onValueChange={setOfferProgramId}>
-            <SelectTrigger className="rounded-xl">
-              <SelectValue placeholder="Program" />
-            </SelectTrigger>
-            <SelectContent>
-              {(programsQ.data ?? []).map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input placeholder="Intake e.g. 2027-09" value={intake} onChange={(e) => setIntake(e.target.value)} className="rounded-xl" />
-          <Input placeholder="Tuition ¥" value={tuition} onChange={(e) => setTuition(e.target.value)} className="rounded-xl" />
-          <Select value={offerStatus} onValueChange={(v) => setOfferStatus(v as OfferStatus)}>
-            <SelectTrigger className="rounded-xl">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {OFFER_STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {OFFER_LABELS[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input placeholder="Source (e.g. Official PDF)" value={infoSource} onChange={(e) => setInfoSource(e.target.value)} className="rounded-xl" />
+          {editingOffer ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Program</label>
+              <p className="rounded-xl border border-black/[0.06] bg-black/[0.02] px-3 py-2 text-sm">
+                {(programsQ.data ?? []).find((p) => p.id === offerProgramId)?.name ?? "Program"}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Program</label>
+              <Select value={offerProgramId} onValueChange={setOfferProgramId}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Program" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(programsQ.data ?? []).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Intake</label>
+            <Input
+              placeholder="Intake e.g. 2027-09"
+              value={intake}
+              onChange={(e) => setIntake(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Tuition (¥)</label>
+            <Input
+              placeholder="Tuition ¥"
+              value={tuition}
+              onChange={(e) => setTuition(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Scholarship</label>
+            <Select
+              value={scholarshipType || "__none__"}
+              onValueChange={(v) => setScholarshipType(v === "__none__" ? "" : v)}
+            >
+              <SelectTrigger className="rounded-xl">
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                {SCHOLARSHIP_TYPE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value || "__none__"} value={opt.value || "__none__"}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Scholarship notes</label>
+            <Textarea
+              placeholder="e.g. Merit-based; covers tuition + dorm; HSK 5 required"
+              value={scholarshipNotes}
+              onChange={(e) => setScholarshipNotes(e.target.value)}
+              className="min-h-[80px] rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Deadline</label>
+            <Input
+              placeholder="e.g. 2027-06-30"
+              value={offerDeadline}
+              onChange={(e) => setOfferDeadline(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Status</label>
+            <Select value={offerStatus} onValueChange={(v) => setOfferStatus(v as OfferStatus)}>
+              <SelectTrigger className="rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {OFFER_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {OFFER_LABELS[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Source</label>
+            <Input
+              placeholder="Source (e.g. Official PDF)"
+              value={infoSource}
+              onChange={(e) => setInfoSource(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
         </div>
       </OpsDialog>
 

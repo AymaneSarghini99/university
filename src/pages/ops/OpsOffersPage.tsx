@@ -178,6 +178,7 @@ export default function OpsOffersPage() {
               tuition={o.tuition}
               currency={o.currency}
               scholarship={o.scholarship_type ?? undefined}
+              scholarshipNotes={o.scholarship_notes ?? undefined}
               deadline={o.deadline ?? undefined}
               infoSource={o.info_source}
               lastVerifiedAt={o.last_verified_at}

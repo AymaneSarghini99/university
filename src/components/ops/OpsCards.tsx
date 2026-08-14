@@ -121,6 +121,7 @@ export function OpsOfferCard({
   tuition,
   currency,
   scholarship,
+  scholarshipNotes,
   deadline,
   infoSource,
   lastVerifiedAt,
@@ -135,6 +136,7 @@ export function OpsOfferCard({
   tuition?: number | null;
   currency?: string | null;
   scholarship?: string | null;
+  scholarshipNotes?: string | null;
   deadline?: string | null;
   infoSource?: string | null;
   lastVerifiedAt?: string | null;
@@ -174,12 +176,20 @@ export function OpsOfferCard({
         />
       </div>
 
-      {(scholarship || deadline) && (
+      {(scholarship || scholarshipNotes || deadline) && (
         <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
           {scholarship ? (
-            <div>
+            <div className={scholarshipNotes ? "sm:col-span-2" : undefined}>
               <dt className="font-medium text-muted-foreground">Scholarship</dt>
               <dd className="mt-0.5 text-foreground">{scholarship}</dd>
+              {scholarshipNotes ? (
+                <dd className="mt-1 text-muted-foreground">{scholarshipNotes}</dd>
+              ) : null}
+            </div>
+          ) : scholarshipNotes ? (
+            <div className="sm:col-span-2">
+              <dt className="font-medium text-muted-foreground">Scholarship notes</dt>
+              <dd className="mt-0.5 text-muted-foreground">{scholarshipNotes}</dd>
             </div>
           ) : null}
           {deadline ? (

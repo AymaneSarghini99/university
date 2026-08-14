@@ -268,6 +268,16 @@ export const OFFER_LABELS: Record<OfferStatus, string> = {
   expired: "Expired",
 };
 
+export const SCHOLARSHIP_TYPE_OPTIONS = [
+  { value: "", label: "None" },
+  { value: "50% tuition", label: "50% tuition" },
+  { value: "100% / full", label: "100% / full scholarship" },
+  { value: "Partial (other)", label: "Partial (other)" },
+  { value: "University scholarship", label: "University scholarship" },
+  { value: "CSC", label: "CSC (Chinese Government)" },
+  { value: "Other", label: "Other" },
+] as const;
+
 export const PROGRAM_DEGREE_TYPES = [
   "Chinese Language",
   "Foundation Program",
