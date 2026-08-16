@@ -1035,19 +1035,21 @@ export default function OpsUniversityDetailPage() {
               <SelectTrigger className="rounded-xl">
                 <SelectValue placeholder="Select duration" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[110]">
                 <SelectItem value="__none__">Not set</SelectItem>
                 {PROGRAM_DURATION_PRESETS.map((d) => (
                   <SelectItem key={d} value={d}>
                     {d}
                   </SelectItem>
                 ))}
-                <SelectItem value="__custom__">Other (custom)</SelectItem>
+                {programDurationPreset === "__custom__" ? (
+                  <SelectItem value="__custom__">Other</SelectItem>
+                ) : null}
               </SelectContent>
             </Select>
             {programDurationPreset === "__custom__" ? (
               <Input
-                placeholder="e.g. 18 months, 2.5 years"
+                placeholder="e.g. 18 months, 1 semester"
                 value={programDurationCustom}
                 onChange={(e) => setProgramDurationCustom(e.target.value)}
                 className="rounded-xl"
@@ -1162,7 +1164,7 @@ export default function OpsUniversityDetailPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Notes</label>
+              <label className="text-xs font-medium text-muted-foreground">Scholarship notes</label>
               <Textarea
                 placeholder="e.g. Merit-based; covers tuition + dorm; HSK 5 required"
                 value={scholarshipNotes}
@@ -1189,7 +1191,8 @@ export default function OpsUniversityDetailPage() {
               }
               inputValue={offerDeadline}
               onTextChange={setOfferDeadline}
-              placeholder="YYYY-MM-DD"
+              placeholder="Pick deadline"
+              className="[&_input]:rounded-xl [&_button]:rounded-xl"
             />
           </div>
           <div className="space-y-1.5">
