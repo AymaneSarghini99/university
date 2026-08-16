@@ -3514,6 +3514,20 @@
     "logo_url": "https://www.sallam.ma/universities/zhejiang-university-of-traditional-chinese-medicine/logo.jpg"
   },
   {
+    "slug": "zhejiang-wanli-university",
+    "name": "Zhejiang Wanli University",
+    "abbreviation": "ZWU",
+    "city": "Ningbo",
+    "province": "Zhejiang",
+    "country": "China",
+    "website": "https://www.zwu.edu.cn/",
+    "chinese_name": "浙江万里学院",
+    "university_type": "Regular",
+    "rank": 260,
+    "description_short": "Application-oriented university in Ningbo with English-taught undergraduate and master's programs, Chinese language tracks, and Zhejiang/Ningbo scholarships for international students.",
+    "logo_url": "https://www.sallam.ma/universities/zhejiang-wanli-university/logo.png"
+  },
+  {
     "slug": "zhengzhou-university",
     "name": "Zhengzhou University",
     "abbreviation": "ZZU",
