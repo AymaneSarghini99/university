@@ -21,6 +21,7 @@ import {
   deleteContact,
   deleteOffer,
   deleteOpsUniversity,
+  deleteProgram,
   fetchContacts,
   fetchOffers,
   fetchOpsUniversity,
@@ -110,6 +111,8 @@ export default function OpsUniversityDetailPage() {
   const [removeOpen, setRemoveOpen] = useState(false);
   const [deleteOfferId, setDeleteOfferId] = useState<string | null>(null);
   const [deleteOfferLabel, setDeleteOfferLabel] = useState("");
+  const [deleteProgramId, setDeleteProgramId] = useState<string | null>(null);
+  const [deleteProgramLabel, setDeleteProgramLabel] = useState("");
   const [deleteContactId, setDeleteContactId] = useState<string | null>(null);
   const [deleteContactLabel, setDeleteContactLabel] = useState("");
   const [editingContact, setEditingContact] = useState<OpsContact | null>(null);
@@ -504,6 +507,22 @@ export default function OpsUniversityDetailPage() {
       toast({ title: "Could not delete offer", description: e.message, variant: "destructive" }),
   });
 
+  const deleteProgramMutation = useMutation({
+    mutationFn: (programId: string) => deleteProgram(programId),
+    onSuccess: () => {
+      toast({ title: "Program deleted" });
+      setDeleteProgramId(null);
+      qc.invalidateQueries({ queryKey: ["ops-programs", id] });
+      qc.invalidateQueries({ queryKey: ["ops-programs-all"] });
+      qc.invalidateQueries({ queryKey: ["ops-offers", id] });
+      qc.invalidateQueries({ queryKey: ["ops-offers"] });
+      qc.invalidateQueries({ queryKey: ["ops-offers-list"] });
+      qc.invalidateQueries({ queryKey: ["ops-dashboard"] });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Could not delete program", description: e.message, variant: "destructive" }),
+  });
+
   const updateProgramMutation = useMutation({
     mutationFn: () => {
       if (!editingProgram) throw new Error("No program selected");
@@ -756,9 +775,22 @@ export default function OpsUniversityDetailPage() {
                   duration={p.duration}
                   inactive={!p.active}
                   actions={
-                    <Button size="sm" variant="outline" onClick={() => openEditProgram(p)}>
-                      <Pencil className="h-3.5 w-3.5" /> Edit
-                    </Button>
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => openEditProgram(p)}>
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                        onClick={() => {
+                          setDeleteProgramId(p.id);
+                          setDeleteProgramLabel(p.name);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                      </Button>
+                    </>
                   }
                 />
               ))}
@@ -1356,6 +1388,29 @@ export default function OpsUniversityDetailPage() {
               disabled={deleteContactMutation.isPending}
               onClick={() => {
                 if (deleteContactId) deleteContactMutation.mutate(deleteContactId);
+              }}
+            >
+              Delete
+            </Button>
+          </>
+        }
+      />
+
+      <OpsDialog
+        open={Boolean(deleteProgramId)}
+        onClose={() => setDeleteProgramId(null)}
+        title="Delete program?"
+        description={`Remove ${deleteProgramLabel}? Linked offers for this program will also be deleted.`}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeleteProgramId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteProgramMutation.isPending}
+              onClick={() => {
+                if (deleteProgramId) deleteProgramMutation.mutate(deleteProgramId);
               }}
             >
               Delete

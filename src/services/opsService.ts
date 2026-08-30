@@ -227,6 +227,11 @@ export async function updateProgram(id: string, patch: Partial<OpsProgram>): Pro
   if (error) throw error;
 }
 
+export async function deleteProgram(id: string): Promise<void> {
+  const { error } = await supabase.from("ops_programs").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // ── Offers ───────────────────────────────────────────────────────────────────
 
 export async function fetchOffers(filters?: {
