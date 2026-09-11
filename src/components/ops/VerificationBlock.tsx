@@ -84,10 +84,10 @@ export function VerificationBlock({
 
 export function formatIntake(intake: string): string {
   const map: Record<string, string> = {
+    "2027-09": "September",
+    "2027-03": "March",
     "2026-09": "September 2026",
-    "2027-09": "September 2027",
     "2026-03": "March 2026",
-    "2027-03": "March 2027",
   };
   return map[intake] ?? intake;
 }

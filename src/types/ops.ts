@@ -32,6 +32,26 @@ export type RecordSource =
   | "web_catalog"
   | "manual";
 
+/** CSCA / entrance exam policy for a university. */
+export type CscaRequirement = "required" | "not_required" | "optional" | "unknown";
+
+/** Whether the university accepts applicants under 18. */
+export type Under18Policy = "yes" | "no" | "case_by_case" | "unknown";
+
+export const CSCA_REQUIREMENT_OPTIONS: { value: CscaRequirement; label: string }[] = [
+  { value: "unknown", label: "Unknown" },
+  { value: "required", label: "CSCA required" },
+  { value: "not_required", label: "CSCA not required" },
+  { value: "optional", label: "CSCA optional" },
+];
+
+export const UNDER_18_OPTIONS: { value: Under18Policy; label: string }[] = [
+  { value: "unknown", label: "Unknown" },
+  { value: "yes", label: "Accepts under 18" },
+  { value: "no", label: "Does not accept under 18" },
+  { value: "case_by_case", label: "Case by case" },
+];
+
 export interface OpsUniversity {
   id: string;
   name: string;
@@ -52,6 +72,9 @@ export interface OpsUniversity {
   internal_notes: string | null;
   /** Operational status: research → verifying → active → closed → archived. */
   status: OperationalStatus;
+  csca_required?: CscaRequirement;
+  accepts_under_18?: Under18Policy;
+  requirements_notes?: string | null;
   created_at: string;
   updated_at: string;
 }

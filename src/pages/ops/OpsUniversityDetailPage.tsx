@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { UniversityLogo } from "@/components/ops/UniversityLogo";
+import { UniversityLogoDialog } from "@/components/ops/UniversityLogoDialog";
 import { scaffoldUniversityMedia } from "@/lib/scaffoldUniversityMedia";
 import { universitySlug } from "@/lib/universitySlug";
 import {
@@ -40,6 +41,8 @@ import {
   OPERATIONAL_STATUSES,
   RELATIONSHIP_LABELS,
   RELATIONSHIP_STATUSES,
+  CSCA_REQUIREMENT_OPTIONS,
+  UNDER_18_OPTIONS,
   type OfferStatus,
   type OperationalStatus,
   type OpsUniversity,
@@ -47,6 +50,8 @@ import {
   type OpsOffer,
   type OpsContact,
   type ContactStatus,
+  type CscaRequirement,
+  type Under18Policy,
   type ProgramDegreeType,
   type ProgramTeachingLanguage,
   type RelationshipStatus,
@@ -81,10 +86,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/context/AuthContext";
-import { CURRENT_PRIMARY_INTAKE } from "@/lib/operatingCycle";
+import { CURRENT_PRIMARY_INTAKE, formatIntakeLabel, PINNED_INTAKES } from "@/lib/operatingCycle";
 
 const TABS = [
   { id: "overview", label: "Overview" },
+  { id: "requirements", label: "Requirements" },
   { id: "programs", label: "Programs" },
   { id: "offers", label: "Offers" },
   { id: "contacts", label: "Contacts" },
@@ -162,6 +168,7 @@ export default function OpsUniversityDetailPage() {
   const [contactStatus, setContactStatus] = useState<ContactStatus>("active");
   const [verifyOfferId, setVerifyOfferId] = useState<string | null>(null);
   const [verifyOfferLabel, setVerifyOfferLabel] = useState("");
+  const [logoOpen, setLogoOpen] = useState(false);
 
   const operationalStatusMutation = useMutation({
     mutationFn: (status: OperationalStatus) => updateOpsUniversity(id, { status }),
@@ -601,9 +608,20 @@ export default function OpsUniversityDetailPage() {
               name={uni.name}
               className="h-14 w-14 shrink-0"
               imgClassName="h-10 w-10"
+              editable
+              onEdit={() => setLogoOpen(true)}
             />
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">{uni.name}</h1>
+              <OpsInlineText
+                value={uni.name}
+                placeholder="University name"
+                emptyLabel="University name"
+                required
+                autoEdit={isBlankStub}
+                saving={fieldSaving}
+                onSave={saveIdentityField("name")}
+                className="text-2xl font-semibold tracking-tight text-foreground"
+              />
               <p className="mt-1 text-sm text-muted-foreground">
                 {formatLocation([uni.city, uni.province, uni.country])}
                 {uni.chinese_name ? ` · ${uni.chinese_name}` : ""}
@@ -611,6 +629,18 @@ export default function OpsUniversityDetailPage() {
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <OperationalStatusBadge status={operationalStatus} />
                 <RelationshipStatusBadge status={relationshipStatus} />
+                {(uni.csca_required ?? "unknown") !== "unknown" ? (
+                  <span className="inline-flex rounded-full border border-black/[0.08] bg-white px-2.5 py-0.5 text-xs font-medium text-foreground">
+                    {CSCA_REQUIREMENT_OPTIONS.find((o) => o.value === uni.csca_required)?.label ??
+                      uni.csca_required}
+                  </span>
+                ) : null}
+                {(uni.accepts_under_18 ?? "unknown") !== "unknown" ? (
+                  <span className="inline-flex rounded-full border border-black/[0.08] bg-white px-2.5 py-0.5 text-xs font-medium text-foreground">
+                    {UNDER_18_OPTIONS.find((o) => o.value === uni.accepts_under_18)?.label ??
+                      uni.accepts_under_18}
+                  </span>
+                ) : null}
                 <span className="text-xs text-muted-foreground">
                   Offers · {activeOffers}
                 </span>
@@ -746,6 +776,92 @@ export default function OpsUniversityDetailPage() {
             </OpsPanelBody>
           </OpsPanel>
         </div>
+      )}
+
+      {tab === "requirements" && (
+        <OpsPanel>
+          <OpsPanelHeader title="Admissions requirements" />
+          <OpsPanelBody>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">CSCA test</label>
+                <Select
+                  value={uni.csca_required ?? "unknown"}
+                  onValueChange={(value) =>
+                    updateFieldMutation.mutate(
+                      { csca_required: value as CscaRequirement },
+                      {
+                        onSuccess: () => toast({ title: "CSCA requirement saved" }),
+                      },
+                    )
+                  }
+                  disabled={fieldSaving}
+                >
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CSCA_REQUIREMENT_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Accepts under 18
+                </label>
+                <Select
+                  value={uni.accepts_under_18 ?? "unknown"}
+                  onValueChange={(value) =>
+                    updateFieldMutation.mutate(
+                      { accepts_under_18: value as Under18Policy },
+                      {
+                        onSuccess: () => toast({ title: "Under-18 policy saved" }),
+                      },
+                    )
+                  }
+                  disabled={fieldSaving}
+                >
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UNDER_18_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Notes
+                </label>
+                <Textarea
+                  placeholder="Other exams, exceptions, guardian requirements…"
+                  className="min-h-[100px] rounded-xl"
+                  defaultValue={uni.requirements_notes ?? ""}
+                  key={`req-notes-${uni.id}-${uni.requirements_notes ?? ""}`}
+                  disabled={fieldSaving}
+                  onBlur={(e) => {
+                    const next = e.target.value.trim() || null;
+                    if (next === (uni.requirements_notes?.trim() || null)) return;
+                    updateFieldMutation.mutate(
+                      { requirements_notes: next },
+                      { onSuccess: () => toast({ title: "Requirements notes saved" }) },
+                    );
+                  }}
+                />
+              </div>
+            </div>
+          </OpsPanelBody>
+        </OpsPanel>
       )}
 
       {tab === "programs" && (
@@ -1168,12 +1284,21 @@ export default function OpsUniversityDetailPage() {
           )}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Intake</label>
-            <Input
-              placeholder="Intake e.g. 2027-09"
-              value={intake}
-              onChange={(e) => setIntake(e.target.value)}
-              className="rounded-xl"
-            />
+            <Select value={intake} onValueChange={setIntake}>
+              <SelectTrigger className="rounded-xl">
+                <SelectValue placeholder="Intake" />
+              </SelectTrigger>
+              <SelectContent>
+                {PINNED_INTAKES.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {formatIntakeLabel(value)}
+                  </SelectItem>
+                ))}
+                {intake && !(PINNED_INTAKES as readonly string[]).includes(intake) ? (
+                  <SelectItem value={intake}>{formatIntakeLabel(intake)}</SelectItem>
+                ) : null}
+              </SelectContent>
+            </Select>
           </div>
           <div className="rounded-xl border border-brand/20 bg-brand/[0.04] px-3 py-2.5 space-y-3">
             <p className="text-xs font-medium text-brand">Scholarship (optional)</p>
@@ -1440,6 +1565,22 @@ export default function OpsUniversityDetailPage() {
             </Button>
           </>
         }
+      />
+
+      <UniversityLogoDialog
+        open={logoOpen}
+        onClose={() => setLogoOpen(false)}
+        universityId={id}
+        universityName={uni.name}
+        slug={uni.public_catalog_slug ?? uni.slug}
+        logoUrl={uni.logo_url}
+        saving={fieldSaving}
+        onSaveUrl={async (nextUrl) => {
+          await updateFieldMutation.mutateAsync({ logo_url: nextUrl });
+          toast({
+            title: nextUrl ? "Logo updated" : "Logo removed",
+          });
+        }}
       />
 
       <VerifyOfferDialog

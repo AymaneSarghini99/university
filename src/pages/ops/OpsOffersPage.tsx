@@ -123,10 +123,10 @@ export default function OpsOffersPage() {
               </SelectItem>
             ))}
             {intakes
-              .filter((i) => i !== "2026-09" && i !== "2027-09")
+              .filter((i) => !(PINNED_INTAKES as readonly string[]).includes(i))
               .map((i) => (
                 <SelectItem key={i} value={i}>
-                  {i}
+                  {formatIntakeLabel(i)}
                 </SelectItem>
               ))}
           </SelectContent>
