@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postbuild": "node scripts/check-client-bundle.mjs dist"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
