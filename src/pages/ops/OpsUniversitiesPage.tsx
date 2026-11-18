@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { universityDisplayName } from "@/lib/universityName";
 
 export default function OpsUniversitiesPage() {
   const [params, setParams] = useSearchParams();
@@ -186,7 +187,7 @@ export default function OpsUniversitiesPage() {
                     <tr key={u.id} className="border-b border-black/[0.04] transition hover:bg-black/[0.015]">
                       <td className="px-4 py-3.5">
                         <Link to={`/ops/universities/${u.id}`} className="font-medium hover:text-brand">
-                          {u.name}
+                          {universityDisplayName(u.name, u.short_name)}
                         </Link>
                       </td>
                       <td className="px-4 py-3.5 text-muted-foreground">
@@ -233,7 +234,7 @@ export default function OpsUniversitiesPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold">{u.name}</p>
+                    <p className="font-semibold">{universityDisplayName(u.name, u.short_name)}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {formatLocation([u.city, u.province, u.country])}
                     </p>

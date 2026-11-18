@@ -492,7 +492,7 @@
   {
     "slug": "chongqing-university-of-finance-and-economics",
     "name": "Chongqing University of Finance and Economics",
-    "abbreviation": "CUFE",
+    "abbreviation": "CQUFE",
     "city": "Chongqing",
     "province": "Chongqing",
     "country": "China",
@@ -576,7 +576,7 @@
   {
     "slug": "communication-university-of-zhejiang",
     "name": "Communication University of Zhejiang",
-    "abbreviation": null,
+    "abbreviation": "CUZ",
     "city": null,
     "province": null,
     "country": "China",
@@ -856,7 +856,7 @@
   {
     "slug": "guangdong-university-of-petrochemical-technology",
     "name": "Guangdong University of Petrochemical Technology",
-    "abbreviation": "GDUT",
+    "abbreviation": "GDUPT",
     "city": "Maoming",
     "province": "Guangdong",
     "country": "China",
@@ -996,7 +996,7 @@
   {
     "slug": "guizhou-institute-of-technology",
     "name": "Guizhou Institute of Technology",
-    "abbreviation": null,
+    "abbreviation": "GIT",
     "city": null,
     "province": null,
     "country": "China",
@@ -1108,7 +1108,7 @@
   {
     "slug": "hainan-college-of-economics-and-business",
     "name": "Hainan College of Economics and Business",
-    "abbreviation": null,
+    "abbreviation": "HCEB",
     "city": null,
     "province": null,
     "country": "China",
@@ -1150,7 +1150,7 @@
   {
     "slug": "hainan-university",
     "name": "Hainan University",
-    "abbreviation": "HNU",
+    "abbreviation": "HAINU",
     "city": "Haikou",
     "province": "Hainan",
     "country": "China",
@@ -1164,7 +1164,7 @@
   {
     "slug": "hainan-university-of-science-and-technology",
     "name": "Hainan University of Science and Technology",
-    "abbreviation": "HUST",
+    "abbreviation": "HAINUST",
     "city": "Haikou",
     "province": "Hainan",
     "country": "China",
@@ -1178,7 +1178,7 @@
   {
     "slug": "hainan-vocational-university-of-science-and-technology",
     "name": "Hainan Vocational University of Science and Technology",
-    "abbreviation": null,
+    "abbreviation": "HVUST",
     "city": null,
     "province": null,
     "country": "China",
@@ -1304,7 +1304,7 @@
   {
     "slug": "henan-university-of-chinese-medicine",
     "name": "Henan University of Chinese Medicine",
-    "abbreviation": "HUCM",
+    "abbreviation": "HACTCM",
     "city": "Zhengzhou",
     "province": "Henan",
     "country": "China",
@@ -1318,7 +1318,7 @@
   {
     "slug": "henan-university-of-economics-and-law",
     "name": "Henan University of Economics and Law",
-    "abbreviation": null,
+    "abbreviation": "HUEL",
     "city": null,
     "province": null,
     "country": "China",
@@ -1346,7 +1346,7 @@
   {
     "slug": "henan-university-of-technology",
     "name": "Henan University of Technology",
-    "abbreviation": "HUT",
+    "abbreviation": "HAUT",
     "city": "Jiaozuo",
     "province": "Henan",
     "country": "China",
@@ -1416,7 +1416,7 @@
   {
     "slug": "hunan-normal-university",
     "name": "Hunan Normal University",
-    "abbreviation": "HNU",
+    "abbreviation": "HUNNU",
     "city": "Changsha",
     "province": "Hunan",
     "country": "China",
@@ -1458,7 +1458,7 @@
   {
     "slug": "hunan-university-of-chinese-medicine",
     "name": "Hunan University of Chinese Medicine",
-    "abbreviation": "HUCM",
+    "abbreviation": "HNUCM",
     "city": "Changsha",
     "province": "Hunan",
     "country": "China",
@@ -1514,7 +1514,7 @@
   {
     "slug": "hunan-university-of-technology-and-business",
     "name": "Hunan University of Technology and Business",
-    "abbreviation": null,
+    "abbreviation": "HUTB",
     "city": null,
     "province": null,
     "country": "China",
@@ -1808,7 +1808,7 @@
   {
     "slug": "kunming-university-of-science-and-technology",
     "name": "Kunming University of Science and Technology",
-    "abbreviation": null,
+    "abbreviation": "KUST",
     "city": null,
     "province": null,
     "country": "China",
@@ -1892,7 +1892,7 @@
   {
     "slug": "nanjing-tech-university",
     "name": "Nanjing Tech University",
-    "abbreviation": null,
+    "abbreviation": "NJTech",
     "city": null,
     "province": null,
     "country": "China",
@@ -2503,7 +2503,7 @@
     "university_type": "Regular",
     "rank": 115,
     "description_short": "Key foreign-language university of Western China in Chongqing: languages, translation, international studies and business. Tuition from 15,000 RMB/year (bachelor). CSCA required for bachelor applicants.",
-    "logo_url": "https://www.sallam.ma/universities/sichuan-international-studies-university/logo.png"
+    "logo_url": "https://www.sallam.ma/universities/sichuan-international-studies-university/logo-v2.png"
   },
   {
     "slug": "sichuan-normal-university",
@@ -2550,7 +2550,7 @@
   {
     "slug": "sichuan-university-of-finance-and-economics",
     "name": "Sichuan University of Finance and Economics",
-    "abbreviation": "SUFE",
+    "abbreviation": "SCUFE",
     "city": "Chengdu",
     "province": "Sichuan",
     "country": "China",
@@ -2816,7 +2816,7 @@
   {
     "slug": "tibet-university-of-finance-and-economics",
     "name": "Tibet University of Finance and Economics",
-    "abbreviation": "TUFE",
+    "abbreviation": "XZUFE",
     "city": "Lhasa",
     "province": "Tibet",
     "country": "China",
@@ -2886,7 +2886,7 @@
   {
     "slug": "tongji-university",
     "name": "Tongji University",
-    "abbreviation": "TJU",
+    "abbreviation": "Tongji",
     "city": "Shanghai",
     "province": "Shanghai",
     "country": "China",
@@ -2970,7 +2970,7 @@
   {
     "slug": "xian-academy-of-fine-arts",
     "name": "Xi'an Academy of Fine Arts",
-    "abbreviation": null,
+    "abbreviation": "XAFA",
     "city": null,
     "province": null,
     "country": "China",
@@ -2998,7 +2998,7 @@
   {
     "slug": "xian-medical-university",
     "name": "Xi'an Medical University",
-    "abbreviation": "XMU",
+    "abbreviation": "XAMU",
     "city": "Xi'an",
     "province": "Shaanxi",
     "country": "China",
@@ -3544,7 +3544,7 @@
   {
     "slug": "zhengzhou-university-of-aeronautics",
     "name": "Zhengzhou University of Aeronautics",
-    "abbreviation": null,
+    "abbreviation": "ZUA",
     "city": null,
     "province": null,
     "country": "China",

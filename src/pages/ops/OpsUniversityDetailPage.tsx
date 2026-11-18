@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MajorNameInput } from "@/components/ops/MajorNameInput";
+import { officialMajorsFor } from "@/data/official-majors";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { UniversityLogo } from "@/components/ops/UniversityLogo";
 import { UniversityLogoDialog } from "@/components/ops/UniversityLogoDialog";
@@ -87,6 +89,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/context/AuthContext";
 import { CURRENT_PRIMARY_INTAKE, formatIntakeLabel, PINNED_INTAKES } from "@/lib/operatingCycle";
+import { universityDisplayName } from "@/lib/universityName";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -147,6 +150,18 @@ export default function OpsUniversityDetailPage() {
   const [programName, setProgramName] = useState("");
   const [degreeType, setDegreeType] = useState<ProgramDegreeType>("Chinese Language");
   const [language, setLanguage] = useState<ProgramTeachingLanguage>("Chinese");
+  const allProgramsQ = useQuery({
+    queryKey: ["ops", "programs", "all-names"],
+    queryFn: () => fetchPrograms(),
+    staleTime: 1000 * 60 * 5,
+  });
+  const usedProgramNames = useMemo(() => {
+    const names = (allProgramsQ.data ?? [])
+      .filter((p) => !p.degree_type || p.degree_type === degreeType)
+      .map((p) => p.name.trim());
+    return [...new Set(names)].sort((a, b) => a.localeCompare(b));
+  }, [allProgramsQ.data, degreeType]);
+
   const [programDurationPreset, setProgramDurationPreset] = useState("__none__");
   const [programDurationCustom, setProgramDurationCustom] = useState("");
   const [programNotes, setProgramNotes] = useState("");
@@ -622,6 +637,9 @@ export default function OpsUniversityDetailPage() {
                 onSave={saveIdentityField("name")}
                 className="text-2xl font-semibold tracking-tight text-foreground"
               />
+              {uni.short_name && universityDisplayName(uni.name, uni.short_name) !== uni.name ? (
+                <p className="text-sm font-medium text-muted-foreground">({uni.short_name})</p>
+              ) : null}
               <p className="mt-1 text-sm text-muted-foreground">
                 {formatLocation([uni.city, uni.province, uni.country])}
                 {uni.chinese_name ? ` · ${uni.chinese_name}` : ""}
@@ -1139,15 +1157,6 @@ export default function OpsUniversityDetailPage() {
       >
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Program name</label>
-            <Input
-              placeholder="e.g. Chinese Language Program"
-              value={programName}
-              onChange={(e) => setProgramName(e.target.value)}
-              className="rounded-xl"
-            />
-          </div>
-          <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Degree type</label>
             <Select value={degreeType} onValueChange={(v) => setDegreeType(v as ProgramDegreeType)}>
               <SelectTrigger className="rounded-xl">
@@ -1161,6 +1170,16 @@ export default function OpsUniversityDetailPage() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Program name</label>
+            <MajorNameInput
+              value={programName}
+              onChange={setProgramName}
+              usedNames={usedProgramNames}
+              officialNames={officialMajorsFor(degreeType)}
+              placeholder="Search majors or type a new one"
+            />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Language</label>

@@ -8,6 +8,7 @@ import { OpsEmptyState, OpsPageHeader, OpsSearchInput } from "@/components/ops/O
 import { formatLocation } from "@/components/ops/VerificationBlock";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { universityDisplayName } from "@/lib/universityName";
 
 function cell(value: string | null | undefined) {
   return value?.trim() ? value : "—";
@@ -83,7 +84,7 @@ export default function OpsProgramsPage() {
                         to={`/ops/universities/${p.university_id}`}
                         className="text-muted-foreground hover:text-brand"
                       >
-                        {p.university?.name ?? "—"}
+                        {p.university ? universityDisplayName(p.university.name, p.university.short_name) : "—"}
                       </Link>
                     </td>
                     <td className="px-4 py-3.5 text-muted-foreground">
@@ -126,7 +127,7 @@ export default function OpsProgramsPage() {
                   <div>
                     <p className="font-semibold">{p.name}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {p.university?.name ?? "—"}
+                      {p.university ? universityDisplayName(p.university.name, p.university.short_name) : "—"}
                       {p.university
                         ? ` · ${formatLocation([p.university.city, p.university.province, p.university.country])}`
                         : null}

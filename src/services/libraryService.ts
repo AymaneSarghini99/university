@@ -6,6 +6,7 @@ import { createOpsUniversity } from "@/services/opsService";
 import type { OpsUniversity } from "@/types/ops";
 import type { LibrarySearchHit, LibrarySource, LibraryUniversity } from "@/types/library";
 import { normalizeUniversityName } from "@/types/library";
+import { orFilterSafe } from "@/lib/universityName";
 
 /** Read-only snapshot of www public catalog (253). Regenerate via apps/docs/scripts/phase5-export-web-library.mjs --write */
 export const UNIVERSITY_LIBRARY = libraryJson as LibraryUniversity[];
@@ -23,9 +24,9 @@ export function searchLibraryCatalog(query: string, limit?: number): LibraryUniv
 
   const scored = UNIVERSITY_LIBRARY.map((u) => {
     const hay =
-      `${u.name} ${u.chinese_name ?? ""} ${u.city ?? ""} ${u.province ?? ""} ${u.slug}`.toLowerCase();
+      `${u.name} ${u.abbreviation ?? ""} ${u.chinese_name ?? ""} ${u.city ?? ""} ${u.province ?? ""} ${u.slug}`.toLowerCase();
     let score = 0;
-    if (u.name.toLowerCase() === q) score = 100;
+    if (u.name.toLowerCase() === q || (u.abbreviation ?? "").toLowerCase() === q) score = 100;
     else if (u.name.toLowerCase().startsWith(q)) score = 80;
     else if (u.slug.includes(q.replace(/\s+/g, "-"))) score = 70;
     else if (hay.includes(q)) score = 50;
@@ -149,10 +150,10 @@ export async function searchUniversityLibrary(query: string): Promise<LibrarySea
 
   if (q) {
     opsQuery = opsQuery.or(
-      `name.ilike.%${q}%,slug.ilike.%${q}%,public_catalog_slug.ilike.%${q}%,chinese_name.ilike.%${q}%`,
+      `name.ilike.%${orFilterSafe(q)}%,short_name.ilike.%${orFilterSafe(q)}%,slug.ilike.%${orFilterSafe(q)}%,public_catalog_slug.ilike.%${orFilterSafe(q)}%,chinese_name.ilike.%${orFilterSafe(q)}%`,
     );
-    pipeQuery = pipeQuery.ilike("name", `%${q}%`);
-    partnerQuery = partnerQuery.or(`name.ilike.%${q}%,catalog_slug.ilike.%${q}%`);
+    pipeQuery = pipeQuery.or(`name.ilike.%${orFilterSafe(q)}%,abbreviation.ilike.%${orFilterSafe(q)}%`);
+    partnerQuery = partnerQuery.or(`name.ilike.%${orFilterSafe(q)}%,catalog_slug.ilike.%${orFilterSafe(q)}%`);
   }
 
   const [opsRes, pipeRes, partnerRes] = await Promise.all([

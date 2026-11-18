@@ -7,6 +7,7 @@ import { VerificationBlock, formatIntake, formatLocation } from "@/components/op
 import type { OfferStatus } from "@/types/ops";
 import type { LibrarySearchHit } from "@/types/library";
 import { cn } from "@/lib/utils";
+import { universityDisplayName } from "@/lib/universityName";
 
 const SOURCE_LABELS: Record<string, string> = {
   public_catalog: "Catalog",
@@ -79,7 +80,7 @@ export function LibraryUniversityCard({
             imgClassName="h-8 w-8"
           />
           <div className="min-w-0">
-            <h3 className="font-semibold text-foreground">{hit.name}</h3>
+            <h3 className="font-semibold text-foreground">{universityDisplayName(hit.name, hit.abbreviation)}</h3>
             <p className="mt-0.5 text-sm text-muted-foreground">
               {formatLocation([hit.city, hit.province, hit.country || "China"])}
             </p>
@@ -160,6 +161,17 @@ export function OpsOfferCard({
         </div>
         <OfferStatusBadge status={status} />
       </div>
+
+      {(status !== "active" || !lastVerifiedAt) && (
+        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          Not usable in student plans or University Offers yet —{" "}
+          {status !== "active" && !lastVerifiedAt
+            ? "set it to Active and mark it verified."
+            : status !== "active"
+              ? "set it to Active."
+              : "mark it verified."}
+        </p>
+      )}
 
       <div className="mt-4">
         <VerificationBlock

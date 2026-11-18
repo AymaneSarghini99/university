@@ -14,6 +14,7 @@ import type {
   RichUniversity,
   OFFER_LABELS,
 } from "@/types/ops";
+import { orFilterSafe } from "@/lib/universityName";
 
 // ── Universities ─────────────────────────────────────────────────────────────
 
@@ -30,7 +31,10 @@ export async function fetchOpsUniversities(filters?: {
     .order("name");
 
   if (filters?.search?.trim()) {
-    query = query.ilike("name", `%${filters.search.trim()}%`);
+    {
+      const term = filters.search.trim();
+      query = query.or(`name.ilike.%${orFilterSafe(term)}%,short_name.ilike.%${orFilterSafe(term)}%,chinese_name.ilike.%${orFilterSafe(term)}%`);
+    }
   }
 
   const { data, error } = await query;
@@ -272,6 +276,7 @@ export async function fetchOffers(filters?: {
     rows = rows.filter(
       (r) =>
         r.university?.name.toLowerCase().includes(q) ||
+        (r.university?.short_name ?? "").toLowerCase().includes(q) ||
         r.program?.name.toLowerCase().includes(q) ||
         r.intake.toLowerCase().includes(q),
     );
@@ -491,6 +496,7 @@ export async function fetchAllPrograms(search?: string): Promise<RichProgram[]> 
       (r) =>
         r.name.toLowerCase().includes(q) ||
         r.university?.name.toLowerCase().includes(q) ||
+        (r.university?.short_name ?? "").toLowerCase().includes(q) ||
         r.degree_type?.toLowerCase().includes(q),
     );
   }

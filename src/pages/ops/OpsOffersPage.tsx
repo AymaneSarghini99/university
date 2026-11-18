@@ -22,6 +22,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { formatIntakeLabel, PINNED_INTAKES } from "@/lib/operatingCycle";
 import { Trash2 } from "lucide-react";
 import { OpsDialog } from "@/components/ops/OpsTabs";
+import { universityDisplayName } from "@/lib/universityName";
 
 export default function OpsOffersPage() {
   const { user } = useAuthContext();
@@ -171,7 +172,7 @@ export default function OpsOffersPage() {
             <OpsOfferCard
               key={o.id}
               universityId={o.university_id}
-              universityName={o.university?.name}
+              universityName={o.university ? universityDisplayName(o.university.name, o.university.short_name) : undefined}
               programName={o.program?.name}
               intake={o.intake}
               status={o.status}

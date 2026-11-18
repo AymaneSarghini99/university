@@ -316,6 +316,7 @@ export const PROGRAM_TEACHING_LANGUAGES = ["Chinese", "English"] as const;
 export type ProgramTeachingLanguage = (typeof PROGRAM_TEACHING_LANGUAGES)[number];
 
 export const PROGRAM_DURATION_PRESETS = [
+  "1 semester",
   "1 year",
   "2 years",
   "3 years",
